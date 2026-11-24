@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; connect-src 'self' https://api.github.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>Ingesture</title>
+  <meta name="description" content="Capture a thought, photo or link into your Obsidian inbox.">
+  <meta name="theme-color" content="#E8EDF0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16212A" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,650&display=swap">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <h1>Ingesture</h1>
+      <span id="queued" class="queued" hidden></span>
+      <button id="open-settings" class="icon-btn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+      </button>
+    </header>
+
+    <label class="visually-hidden" for="text">Your thought</label>
+    <textarea id="text" class="thought" placeholder="What's on your mind?" autocomplete="off"></textarea>
+
+    <label class="visually-hidden" for="hint">Where it belongs (optional)</label>
+    <input id="hint" class="hint" type="text" placeholder="Where it belongs, e.g. for Think Like a Stoic" autocomplete="off">
+
+    <section id="photo-panel" class="photo-panel" hidden aria-label="Photo">
+      <img id="photo-preview" alt="Photo to send">
+      <fieldset id="photo-use" class="photo-use">
+        <legend class="visually-hidden">What should Claude do with the photo?</legend>
+        <label><input type="radio" name="photo-use" value="summarize"><span>Summarize</span></label>
+        <label><input type="radio" name="photo-use" value="notes"><span>Notes</span></label>
+        <label><input type="radio" name="photo-use" value="show"><span>Show</span></label>
+      </fieldset>
+      <button id="remove-photo" class="text-btn" type="button">Remove photo</button>
+    </section>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <p id="mic-note" class="mic-note" hidden>Dictation isn't available in this browser. Use the microphone on your keyboard.</p>
+
+    <nav class="controls" aria-label="Capture">
+      <label class="round-btn" for="photo" aria-label="Add photo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      </label>
+      <input id="photo" type="file" accept="image/*" capture="environment" class="visually-hidden">
+      <button id="mic" class="mic" type="button" aria-pressed="false" aria-label="Start dictation">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+      </button>
+      <button id="send" class="send" type="button" disabled>Send</button>
+    </nav>
+  </main>
+
+  <dialog id="settings" class="settings" aria-labelledby="settings-title">
+    <form method="dialog" id="settings-form">
+      <h2 id="settings-title">Settings</h2>
+      <p class="help">Captures go to <code>inbox/</code> in this GitHub repository.</p>
+      <label>Owner <input id="owner" required autocomplete="off" spellcheck="false"></label>
+      <label>Repository <input id="repo" required autocomplete="off" spellcheck="false"></label>
+      <label>Branch <input id="branch" required autocomplete="off" spellcheck="false"></label>
+      <label>GitHub token <input id="token" type="password" required autocomplete="off" spellcheck="false"></label>
+      <p class="help">A fine-grained token with access to this one repository and <em>Contents: Read and write</em>. It stays on this device.</p>
+      <div class="dialog-actions">
+        <button id="close-settings" class="text-btn" type="button">Cancel</button>
+        <button id="save-settings" class="send" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
