@@ -86,15 +86,16 @@ body {
 .photo-panel { display: grid; grid-template-columns: 4.5rem 1fr; gap: 0.25rem 0.75rem; align-items: center; }
 .photo-panel[hidden] { display: none; }
 .photo-panel img { grid-row: span 2; width: 4.5rem; height: 4.5rem; object-fit: cover; border-radius: 0.5rem; }
-.photo-use { display: flex; gap: 0.4rem; border: 0; margin: 0; padding: 0; flex-wrap: wrap; }
-.photo-use label { position: relative; }
-.photo-use input { position: absolute; opacity: 0; inset: 0; margin: 0; }
-.photo-use span {
+.chips { display: flex; gap: 0.4rem; border: 0; margin: 0; padding: 0; flex-wrap: wrap; }
+.chips label { position: relative; }
+.chips input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+.chips span {
   display: inline-block; padding: 0.3rem 0.75rem; border: 1px solid var(--rule); border-radius: 999px;
   font-size: 0.85rem; color: var(--ink-soft);
 }
-.photo-use input:checked + span { border-color: var(--ink); color: var(--ink); background: var(--paper-raised); }
-.photo-use input:focus-visible + span { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+.chips input:checked + span { border-color: var(--ink); color: var(--ink); background: var(--paper-raised); }
+.chips input:focus-visible + span { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+.dictation-lang { justify-content: center; padding-top: 0.75rem; }
 
 .status { min-height: 1.5em; margin: 0; font-size: 0.95rem; color: var(--ink-soft); }
 .status.ok { color: var(--moss); }

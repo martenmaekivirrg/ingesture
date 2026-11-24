@@ -4,7 +4,7 @@
 const CACHE = 'ingesture-v1';
 const SHELL = [
   './', './index.html', './app.css', './app.js', './manifest.webmanifest',
-  './lib/capture.mjs', './lib/github.mjs', './lib/queue.mjs', './lib/image.mjs', './lib/sender.mjs',
+  './lib/capture.mjs', './lib/github.mjs', './lib/queue.mjs', './lib/image.mjs', './lib/sender.mjs', './lib/dictation.mjs',
   './icons/icon-192.png', './icons/icon-512.png',
 ];
 

@@ -118,6 +118,71 @@ test('a photo is sent as jpg first, then the md that names it', async ({ page })
   expect(puts[1].text).toContain(`source: photo\nimage: "${stem}.jpg"\nphoto_use: summarize\n`);
 });
 
+// A fake recognizer that behaves like Chrome on Android: each result repeats the
+// whole sentence so far. Every instance is recorded on window.__recs.
+async function fakeAndroidSpeech(page) {
+  await page.addInitScript(() => {
+    window.__recs = [];
+    const Fake = class {
+      constructor() { window.__recs.push(this); }
+      start() { this.started = true; }
+      stop() { setTimeout(() => this.onend?.(), 0); }
+      say(...parts) {
+        const results = parts.map((t) => Object.assign([{ transcript: t }], { isFinal: true }));
+        this.onresult?.({ resultIndex: 0, results });
+      }
+    };
+    window.SpeechRecognition = Fake; // Chromium also has a native one; replace both names
+    window.webkitSpeechRecognition = Fake;
+  });
+}
+
+test('dictation on Android-style results writes each word once', async ({ page }) => {
+  await withToken(page);
+  await fakeAndroidSpeech(page);
+  await page.goto('/');
+  await page.click('#mic');
+  await page.evaluate(() => {
+    const r = window.__recs.at(-1);
+    r.say('sorry baby');
+    r.say('sorry baby', 'sorry baby I am here');
+    r.onend(); // Android ends the session on a short pause
+    window.__recs.at(-1).say('and still talking');
+  });
+  await expect(page.locator('#text')).toHaveValue('sorry baby I am here and still talking');
+  expect(await page.evaluate(() => window.__recs.length)).toBe(2);
+  await expect(page.locator('#mic')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('words that arrive after Send do not refill the cleared text box', async ({ page }) => {
+  await withToken(page);
+  await mockGitHub(page, 201);
+  await fakeAndroidSpeech(page);
+  await page.goto('/');
+  await page.click('#mic');
+  await page.evaluate(() => {
+    const r = window.__recs.at(-1);
+    r.say('a finished thought');
+    r.stop = () => {}; // like Android: the session has not ended yet when Send stops it
+  });
+  await page.click('#send');
+  await expect(page.locator('#status')).toHaveText('✓ in inbox');
+  await page.evaluate(() => window.__recs.at(-1).say('a finished thought', 'late tail'));
+  await expect(page.locator('#text')).toHaveValue('');
+});
+
+test('the dictation language switch picks Estonian and remembers it', async ({ page }) => {
+  await withToken(page);
+  await fakeAndroidSpeech(page);
+  await page.goto('/');
+  await expect(page.getByRole('radio', { name: 'EN' })).toBeChecked();
+  await page.getByRole('radio', { name: 'ET' }).check();
+  await page.click('#mic');
+  expect(await page.evaluate(() => window.__recs.at(-1).lang)).toBe('et-EE');
+  await page.reload();
+  await expect(page.getByRole('radio', { name: 'ET' })).toBeChecked();
+});
+
 test.describe('with the service worker', () => {
   test.use({ serviceWorkers: 'allow' });
 

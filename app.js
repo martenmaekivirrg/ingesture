@@ -2,6 +2,7 @@ import { idbStore, enqueue, flush } from './lib/queue.mjs';
 import { putUnique } from './lib/github.mjs';
 import { resizeToJpegB64 } from './lib/image.mjs';
 import { coalesce } from './lib/sender.mjs';
+import { createDictation } from './lib/dictation.mjs';
 
 const SETTINGS_KEY = 'ingesture.settings';
 const DEFAULTS = { owner: 'martenmaekivirrg', repo: 'm6nsa-vault', branch: 'main', token: '' };
@@ -110,6 +111,7 @@ function sourceOf() {
 
 async function send() {
   stopDictation();
+  dictation = null; // late words from that session must not refill the cleared form
   el.send.disabled = true;
   try {
     const photoUse = document.querySelector('input[name="photo-use"]:checked')?.value;
@@ -170,51 +172,66 @@ el.removePhoto.addEventListener('click', clearPhoto);
 // ---------- dictation ----------
 
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
+const LANG_KEY = 'ingesture.dictationLang';
+let dictation = null;
 let baseText = '';
 
 function stopDictation() {
-  if (recognition) recognition.stop();
+  dictation?.stop();
+}
+
+function loadLang() {
+  try { return localStorage.getItem(LANG_KEY) || 'en-US'; } catch { return 'en-US'; }
+}
+
+for (const radio of document.querySelectorAll('input[name="dictation-lang"]')) {
+  radio.checked = radio.value === loadLang();
+  radio.addEventListener('change', () => {
+    try { localStorage.setItem(LANG_KEY, radio.value); } catch { /* private mode: this session only */ }
+  });
+}
+
+function chosenLang() {
+  return document.querySelector('input[name="dictation-lang"]:checked')?.value || 'en-US';
 }
 
 if (!Recognition) {
   el.mic.hidden = true;
   el.micNote.hidden = false;
+  $('dictation-lang').hidden = true;
 } else {
   el.mic.addEventListener('click', () => {
-    if (recognition) { stopDictation(); return; }
-    recognition = new Recognition();
-    recognition.lang = 'en-US';
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    if (dictation?.active) { stopDictation(); return; }
     baseText = el.text.value.trim() ? `${el.text.value.trim()} ` : '';
-    recognition.onresult = (event) => {
-      let finals = '';
-      let interim = '';
-      for (const result of event.results) {
-        if (result.isFinal) finals += result[0].transcript;
-        else interim += result[0].transcript;
-      }
-      el.text.value = (baseText + finals + interim).replace(/\s+/g, ' ').trimStart();
-      state.usedMic = true;
-      updateSendButton();
-    };
-    recognition.onerror = (event) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        setStatus('Microphone blocked. Allow it in the browser settings, or use the keyboard mic.', 'error');
-      } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
-        setStatus(`Dictation stopped: ${event.error}`, 'error');
-      }
-    };
-    recognition.onend = () => {
-      recognition = null;
-      el.mic.setAttribute('aria-pressed', 'false');
-      el.mic.setAttribute('aria-label', 'Start dictation');
-    };
-    recognition.start();
-    el.mic.setAttribute('aria-pressed', 'true');
-    el.mic.setAttribute('aria-label', 'Stop dictation');
-    setStatus('Listening…');
+    const d = createDictation({
+      Recognition,
+      lang: chosenLang(),
+      silenceMs: 6000,
+      onText: (spoken) => {
+        if (dictation !== d) return; // detached by Send
+        el.text.value = baseText + spoken;
+        state.usedMic = true;
+        updateSendButton();
+      },
+      onListening: (on) => {
+        if (dictation && dictation !== d) return; // a newer dictation owns the button
+        el.mic.setAttribute('aria-pressed', String(on));
+        el.mic.setAttribute('aria-label', on ? 'Stop dictation' : 'Start dictation');
+        if (on) setStatus('Listening… stops after 6 s of silence');
+        else if (el.status.textContent.startsWith('Listening')) setStatus('');
+      },
+      onError: (error) => {
+        if (error === 'not-allowed' || error === 'service-not-allowed') {
+          setStatus('Microphone blocked. Allow it in the browser settings, or use the keyboard mic.', 'error');
+        } else if (error === 'language-not-supported') {
+          setStatus('This phone cannot dictate in that language. Try the keyboard mic.', 'error');
+        } else {
+          setStatus(`Dictation stopped: ${error}`, 'error');
+        }
+      },
+    });
+    dictation = d;
+    d.start();
   });
 }
 

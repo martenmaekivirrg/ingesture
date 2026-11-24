@@ -34,7 +34,7 @@
 
     <section id="photo-panel" class="photo-panel" hidden aria-label="Photo">
       <img id="photo-preview" alt="Photo to send">
-      <fieldset id="photo-use" class="photo-use">
+      <fieldset id="photo-use" class="chips">
         <legend class="visually-hidden">What should Claude do with the photo?</legend>
         <label><input type="radio" name="photo-use" value="summarize"><span>Summarize</span></label>
         <label><input type="radio" name="photo-use" value="notes"><span>Notes</span></label>
@@ -56,6 +56,11 @@
       </button>
       <button id="send" class="send" type="button" disabled>Send</button>
     </nav>
+    <fieldset id="dictation-lang" class="chips dictation-lang">
+      <legend class="visually-hidden">Dictation language</legend>
+      <label title="English"><input type="radio" name="dictation-lang" value="en-US" checked><span>EN</span></label>
+      <label title="Estonian"><input type="radio" name="dictation-lang" value="et-EE"><span>ET</span></label>
+    </fieldset>
   </main>
 
   <dialog id="settings" class="settings" aria-labelledby="settings-title">
