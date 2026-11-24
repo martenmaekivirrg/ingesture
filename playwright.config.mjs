@@ -12,7 +12,7 @@ export default defineConfig({
     serviceWorkers: 'block',
   },
   webServer: {
-    command: 'py -m http.server 8090 --bind 127.0.0.1',
+    command: 'node tests/e2e/server.mjs 8090',
     url: 'http://127.0.0.1:8090/index.html',
     reuseExistingServer: false,
     stdout: 'ignore',
